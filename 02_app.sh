@@ -21,6 +21,21 @@ fi
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 
+# Roda um comando da própria API (ex.: preparar-banco) como o usuário garupa,
+# com as mesmas variáveis do serviço. Uso: roda_comando_app <pasta> <args...>
+roda_comando_app() {
+  local pasta="$1"; shift
+  (
+    set -a
+    # shellcheck source=/dev/null
+    source "$ARQ_ENV"
+    set +a
+    cd "$pasta"
+    runuser -u garupa -m -- env HOME=/tmp ASPNETCORE_URLS="http://127.0.0.1:0" \
+      dotnet "$APP_DLL" "$@"
+  )
+}
+
 etapa "1/8 Dependências: .NET $DOTNET_VERSAO, PostgreSQL e Nginx"
 # No AlmaLinux 9 a versão do PostgreSQL é escolhida por módulo, antes de instalar.
 if [[ "$VERSAO_SO" == "9" ]] && ! rpm -q postgresql-server >/dev/null 2>&1; then
@@ -94,9 +109,11 @@ env_define "$ARQ_ENV" ASPNETCORE_URLS "http://127.0.0.1:$APP_PORTA"
 # Faz a API aceitar os cabeçalhos X-Forwarded-* do Nginx.
 env_define "$ARQ_ENV" ASPNETCORE_FORWARDEDHEADERS_ENABLED "true"
 env_define "$ARQ_ENV" "$APP_CHAVE_CONEXAO" "$CONEXAO"
+# Chaves de 256 bits em Base64, geradas uma vez e nunca trocadas
+# (trocar a chave da ficha médica torna os dados já gravados ilegíveis).
 for segredo in $APP_SEGREDOS_GERADOS; do
   if [[ -z "$(env_le "$ARQ_ENV" "$segredo")" ]]; then
-    env_define "$ARQ_ENV" "$segredo" "$(gera_segredo)"
+    env_define "$ARQ_ENV" "$segredo" "$(openssl rand -base64 32)"
     info "Segredo $segredo gerado"
   fi
 done
@@ -124,6 +141,12 @@ else
   fi
   chown -R root:garupa "$DIR_SRC"
   chmod -R u=rwX,g=rX,o= "$DIR_SRC"
+  # Se o global.json do repositório fixa um SDK que a VM não tem (o AlmaLinux traz
+  # a banda 10.0.1xx), o build falha. Removemos a cópia local; o próximo deploy a restaura.
+  if [[ -f "$DIR_SRC/global.json" ]] && ! (cd "$DIR_SRC" && dotnet --version >/dev/null 2>&1); then
+    aviso "global.json pede um SDK diferente do instalado ($(dotnet --version)); compilando sem ele"
+    rm -f "$DIR_SRC/global.json"
+  fi
   CSPROJ="$DIR_SRC/$APP_CSPROJ"
   COMMIT="$(git -C "$DIR_SRC" rev-parse --short HEAD)"
   info "Código em $DIR_SRC, commit $COMMIT ($(git -C "$DIR_SRC" log -1 --format=%s))"
@@ -142,10 +165,18 @@ if [[ ${#CONFIGS[@]} -ne 1 ]]; then
   exit 1
 fi
 APP_DLL="$(basename "${CONFIGS[0]}" .runtimeconfig.json).dll"
+chown -R root:garupa "$RELEASE"
+chmod -R u=rwX,g=rX,o= "$RELEASE"
 info "Publicado em $RELEASE (ponto de entrada: $APP_DLL)"
 
 etapa "5/8 Migrações do banco (EF Core)"
-if [[ "$MODO" == "repositorio" && -n "$APP_EF_PROJETO" ]]; then
+if [[ "$MODO" == "repositorio" && -n "${APP_COMANDO_PREPARAR:-}" ]]; then
+  # A própria API aplica as migrações (e o que mais o comando fizer), antes de entrar no ar.
+  info "Executando: dotnet \"$APP_DLL\" $APP_COMANDO_PREPARAR"
+  # shellcheck disable=SC2086  # o comando pode ter mais de uma palavra
+  roda_comando_app "$RELEASE" ${APP_COMANDO_PREPARAR}
+  info "Banco preparado"
+elif [[ "$MODO" == "repositorio" && -n "$APP_EF_PROJETO" ]]; then
   # O bundle aplica só as migrações pendentes; com o banco em dia, não faz nada.
   if [[ -x "$DIR_FERRAMENTAS/dotnet-ef" ]]; then
     dotnet tool update --tool-path "$DIR_FERRAMENTAS" dotnet-ef --version "$DOTNET_VERSAO.*"
@@ -196,17 +227,11 @@ fi
 info "garupa-api ativa e respondendo 200 em $URL_LOCAL"
 
 if [[ "$MODO" == "repositorio" && -n "$APP_CSV_RISCO" ]]; then
-  info "Carregando a tabela de risco: $APP_CSV_RISCO"
-  # Roda como o usuário garupa, com as mesmas variáveis do serviço.
-  (
-    set -a
-    # shellcheck source=/dev/null
-    source "$ARQ_ENV"
-    set +a
-    cd "$LINK_APP"
-    runuser -u garupa -m -- env HOME=/tmp ASPNETCORE_URLS="http://127.0.0.1:0" \
-      dotnet "$APP_DLL" carregar-risco "$DIR_SRC/$APP_CSV_RISCO"
-  )
+  # Caminho absoluto (ex.: /opt/garupa/dados/risco_celula.csv) ou relativo ao repositório da API.
+  CSV="$APP_CSV_RISCO"
+  [[ "$CSV" == /* ]] || CSV="$DIR_SRC/$CSV"
+  info "Carregando a tabela de risco: $CSV"
+  roda_comando_app "$LINK_APP" carregar-risco "$CSV"
 fi
 
 etapa "7/8 Nginx como proxy reverso + SELinux"

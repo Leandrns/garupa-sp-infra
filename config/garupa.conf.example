@@ -19,17 +19,22 @@ ATUALIZAR_SISTEMA="sim"
 ENDURECER_SSH="nao"
 
 # Repositório da API. Vazio = sobe a API de ensaio (api-ensaio/, só /api/v1/saude).
-APP_REPO_URL=""
+APP_REPO_URL="https://github.com/caio-alex/garupa-sp-api.git"
 APP_BRANCH="main"
 # Projeto da Web API, dentro do repositório.
-APP_CSPROJ="api/src/Garupa.Api/Garupa.Api.csproj"
-# Projeto com as migrações do EF Core. Vazio = não aplica migrações.
-APP_EF_PROJETO="api/src/Garupa.Infrastructure/Garupa.Infrastructure.csproj"
+APP_CSPROJ="Garupa API/Garupa API.csproj"
+# Comando da API que aplica as migrações antes de ela entrar no ar.
+APP_COMANDO_PREPARAR="preparar-banco"
+# Alternativa: projeto com as migrações, aplicadas por um bundle do dotnet-ef.
+# Só é usado se APP_COMANDO_PREPARAR estiver vazio.
+APP_EF_PROJETO=""
 # Variável que a API lê para a connection string ("__" vira ":" no .NET).
-APP_CHAVE_CONEXAO="ConnectionStrings__DefaultConnection"
-# Segredos gerados na VM uma única vez (separados por espaço).
-APP_SEGREDOS_GERADOS="Seguranca__ChaveFichaMedica"
-# CSV de risco carregado após o deploy com "carregar-risco <arquivo>". Vazio = não carrega.
+APP_CHAVE_CONEXAO="ConnectionStrings__GarupaDb"
+# Segredos gerados na VM uma única vez: chaves de 256 bits em Base64 (separados por espaço).
+# Criptografia__Chave protege a ficha médica: perder ou trocar torna os dados ilegíveis.
+APP_SEGREDOS_GERADOS="Criptografia__Chave"
+# CSV de risco carregado após o deploy com "carregar-risco <arquivo>".
+# Caminho absoluto ou relativo ao repositório da API. Vazio = não carrega.
 APP_CSV_RISCO=""
 
 # Tem de bater com o <TargetFramework> da API (net10.0 -> "10.0").
