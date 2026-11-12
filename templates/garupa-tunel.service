@@ -1,0 +1,19 @@
+# /etc/systemd/system/garupa-tunel.service, instalado pelo 06_tunel.sh (opcional).
+# Ver a URL pública: journalctl -u garupa-tunel | grep trycloudflare
+
+[Unit]
+Description=Garupa SP - túnel público (Cloudflare quick tunnel)
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Usuário temporário criado pelo systemd só para este processo.
+DynamicUser=yes
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:80
+Restart=always
+RestartSec=10
+SyslogIdentifier=garupa-tunel
+
+[Install]
+WantedBy=multi-user.target
