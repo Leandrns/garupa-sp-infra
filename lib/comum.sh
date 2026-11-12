@@ -85,7 +85,9 @@ inicia_script() {
   printf '\n### %s | %s | exec=%s | usuario=%s\n' \
     "$(date --iso-8601=seconds)" "$NOME_SCRIPT" "$EXEC_ID" "$(quem_executou)"
 
-  trap 'falha_na_linha "$LINENO" "$BASH_COMMAND"' ERR
+  # Só reporta falhas do script principal. Dentro de $(...) um código diferente de 0
+  # pode ser esperado (ex.: systemctl is-active de um serviço parado) e não interrompe o script.
+  trap '[[ $BASH_SUBSHELL -eq 0 ]] && falha_na_linha "$LINENO" "$BASH_COMMAND"' ERR
   trap 'finaliza_script $?' EXIT
   auditoria INICIO "args=$*"
 }
