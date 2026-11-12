@@ -1,0 +1,12 @@
+# /etc/audit/rules.d/garupa.rules, instalado pelo 01_infra.sh.
+# Registra quem alterou arquivos sensíveis, mesmo fora dos scripts.
+# Consultar: ausearch -k garupa-config -i
+# -w caminho vigiado | -p wa escrita e mudança de atributos | -k etiqueta da busca
+
+-w /etc/garupa/ -p wa -k garupa-config
+-w /opt/garupa/releases/ -p wa -k garupa-deploy
+-w /etc/systemd/system/garupa-api.service -p wa -k garupa-systemd
+-w /etc/systemd/system/garupa-monitor.service -p wa -k garupa-systemd
+-w /etc/sudoers -p wa -k garupa-sudo
+-w /etc/sudoers.d/ -p wa -k garupa-sudo
+-w /etc/firewalld/ -p wa -k garupa-firewall

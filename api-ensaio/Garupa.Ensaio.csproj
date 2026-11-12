@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- O 02_app.sh sobrescreve o TargetFramework com DOTNET_VERSAO. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Garupa.Ensaio</AssemblyName>
+  </PropertyGroup>
+
+</Project>

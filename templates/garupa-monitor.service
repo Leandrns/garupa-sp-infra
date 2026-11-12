@@ -1,0 +1,24 @@
+# /etc/systemd/system/garupa-monitor.service, instalado pelo 03_monitor.sh.
+
+[Unit]
+Description=Garupa SP - monitor de CPU, memória, disco e saúde da API
+After=network-online.target
+Wants=network-online.target
+# 0 = nunca desiste de reiniciar o monitor.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+# Sem privilégios; o sudo dele só permite reiniciar a API (/etc/sudoers.d/garupa-monitor).
+User=garupa-mon
+Group=garupa-mon
+ExecStart=/usr/local/bin/garupa-monitor
+# always: volta mesmo se sair sem erro ou for morto.
+Restart=always
+RestartSec=5
+SyslogIdentifier=garupa-monitor
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

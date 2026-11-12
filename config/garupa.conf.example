@@ -1,0 +1,53 @@
+# Configuração da VM do Garupa SP.
+# Copie para config/garupa.conf (fica fora do Git) e ajuste os valores.
+# Senhas não ficam aqui: os scripts as geram na VM, em /etc/garupa.
+
+# Nome da VM (aparece no prompt, nos logs e no Nginx).
+VM_HOSTNAME="garupa-sp-vm"
+FUSO_HORARIO="America/Sao_Paulo"
+
+# "dhcp" ou "estatico". Troque para IP fixo pelo console da VM, não por SSH.
+REDE_MODO="dhcp"
+REDE_IP="192.168.0.50"        # só no modo estatico
+REDE_PREFIXO="24"             # 24 = máscara 255.255.255.0
+REDE_GATEWAY="192.168.0.1"    # só no modo estatico
+REDE_DNS="1.1.1.1 8.8.8.8"    # vale nos dois modos
+
+# "sim" roda dnf upgrade no 01_infra.sh.
+ATUALIZAR_SISTEMA="sim"
+# "sim" bloqueia o login de root por senha no SSH. Só ligue depois de entrar com um usuário comum.
+ENDURECER_SSH="nao"
+
+# Repositório da API. Vazio = sobe a API de ensaio (api-ensaio/, só /api/v1/saude).
+APP_REPO_URL=""
+APP_BRANCH="main"
+# Projeto da Web API, dentro do repositório.
+APP_CSPROJ="api/src/Garupa.Api/Garupa.Api.csproj"
+# Projeto com as migrações do EF Core. Vazio = não aplica migrações.
+APP_EF_PROJETO="api/src/Garupa.Infrastructure/Garupa.Infrastructure.csproj"
+# Variável que a API lê para a connection string ("__" vira ":" no .NET).
+APP_CHAVE_CONEXAO="ConnectionStrings__DefaultConnection"
+# Segredos gerados na VM uma única vez (separados por espaço).
+APP_SEGREDOS_GERADOS="Seguranca__ChaveFichaMedica"
+# CSV de risco carregado após o deploy com "carregar-risco <arquivo>". Vazio = não carrega.
+APP_CSV_RISCO=""
+
+# Tem de bater com o <TargetFramework> da API (net10.0 -> "10.0").
+DOTNET_VERSAO="10.0"
+# Porta interna da API; só o Nginx acessa.
+APP_PORTA="5000"
+SAUDE_CAMINHO="/api/v1/saude"
+
+# No AlmaLinux 9 escolhe o módulo; no 10 a versão do sistema já é a 16.
+PG_VERSAO="16"
+DB_NOME="garupa"
+DB_USUARIO="garupa_app"
+
+# Limites de alerta, em %.
+CPU_LIMITE="80"
+MEM_LIMITE="80"
+DISCO_LIMITE="85"
+MONITOR_INTERVALO="15"            # segundos entre medições
+SAUDE_FALHAS_PARA_REINICIAR="3"   # ciclos sem resposta até reiniciar a API
+REPETIR_ALERTA_A_CADA="20"        # ciclos entre repetições de um alerta ativo
+ALERTA_WEBHOOK_URL=""             # opcional, formato Discord

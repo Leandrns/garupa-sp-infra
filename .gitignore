@@ -1,0 +1,14 @@
+# Configuração da SUA VM (copie de config/garupa.conf.example)
+config/garupa.conf
+
+# Nunca versionar segredos
+*.env
+.db_senha
+
+# Saída de build da API de ensaio
+api-ensaio/bin/
+api-ensaio/obj/
+
+# Chaves privadas do PuTTY e logs de sessão
+*.ppk
+putty-*.log

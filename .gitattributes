@@ -1,0 +1,6 @@
+# Scripts e configs precisam de fim de linha Unix (LF). Com CRLF (Windows),
+# o bash falha com erros como "$'\r': command not found".
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.jpg binary

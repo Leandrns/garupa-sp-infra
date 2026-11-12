@@ -1,0 +1,31 @@
+# /etc/logrotate.d/garupa, instalado pelo 01_infra.sh.
+# Testar: logrotate -d /etc/logrotate.d/garupa   Forçar: logrotate -f /etc/logrotate.d/garupa
+# Os logs do Nginx ficam com o /etc/logrotate.d/nginx do pacote (o mesmo arquivo em duas regras dá erro).
+
+# Logs dos scripts (root).
+/var/log/garupa/auditoria.log /var/log/garupa/execucao.log {
+    su root root
+    daily
+    rotate 30
+    maxsize 20M
+    compress
+    delaycompress
+    missingok
+    notifempty
+    dateext
+    create 0640 root root
+}
+
+# Logs do monitor (garupa-mon).
+/var/log/garupa/monitor.log /var/log/garupa/alertas.log {
+    su root root
+    daily
+    rotate 14
+    maxsize 10M
+    compress
+    delaycompress
+    missingok
+    notifempty
+    dateext
+    create 0640 garupa-mon garupa-mon
+}

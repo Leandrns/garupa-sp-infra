@@ -1,0 +1,39 @@
+# /etc/systemd/system/garupa-api.service, gerado pelo 02_app.sh.
+
+[Unit]
+Description=Garupa SP - API (.NET)
+Documentation=https://github.com/Leandrns/garupa-sp-infra
+After=network-online.target postgresql.service
+# Wants, não Requires: com o banco parado a API segue viva e o /saude responde 503.
+Wants=network-online.target postgresql.service
+# Cinco quedas em 60 s e o systemd desiste. Liberar: systemctl reset-failed garupa-api
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=garupa
+Group=garupa
+WorkingDirectory=/opt/garupa/app
+EnvironmentFile=/etc/garupa/garupa.env
+Environment=DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
+ExecStart=/usr/bin/dotnet /opt/garupa/app/${APP_DLL}
+
+# Processo morreu com erro (crash, kill -9, falta de memória): sobe de novo em 5 s.
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=garupa-api
+
+# A API não ganha privilégios, não vê /home e não escreve em /usr, /boot e /etc.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
