@@ -83,6 +83,11 @@ dnf -y install \
   chrony firewalld logrotate audit \
   policycoreutils-python-utils gettext openssl \
   bash-completion stress-ng
+# No AlmaLinux 10 o augenrules e a pasta /etc/audit/rules.d ficam no pacote audit-rules
+# (no 9 vêm dentro do audit, e o audit-rules não existe).
+if dnf -q info audit-rules >/dev/null 2>&1; then
+  dnf -y install audit-rules
+fi
 
 if [[ "$ATUALIZAR_SISTEMA" == "sim" ]]; then
   info "Aplicando atualizações de segurança (pode demorar na primeira vez)..."
@@ -154,6 +159,7 @@ else
 fi
 
 systemctl enable --now auditd
+install -d -m 0750 /etc/audit/rules.d
 install -m 0600 "$RAIZ_REPO/templates/auditd-garupa.rules" /etc/audit/rules.d/garupa.rules
 if augenrules --load >/dev/null 2>&1; then
   info "auditd: $(auditctl -l | grep -c 'garupa-') regras do Garupa ativas"
