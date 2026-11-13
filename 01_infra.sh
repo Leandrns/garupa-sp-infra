@@ -149,7 +149,13 @@ done
 etapa "8/9 Logs: journal persistente, rotação e auditd"
 install -d -m 0755 /etc/systemd/journald.conf.d
 install -m 0644 "$RAIZ_REPO/templates/journald-garupa.conf" /etc/systemd/journald.conf.d/garupa.conf
+# Cria /var/log/journal com dono, grupo e ACLs que o journald espera.
+install -d /var/log/journal
+systemd-tmpfiles --create --prefix /var/log/journal
 systemctl restart systemd-journald
+# Sem isso, o journal fica em /run (memória) até o próximo boot.
+journalctl --flush
+info "Journal em disco: $(journalctl --disk-usage)"
 
 install -m 0644 "$RAIZ_REPO/templates/logrotate-garupa" /etc/logrotate.d/garupa
 if logrotate -d /etc/logrotate.d/garupa >/dev/null 2>&1; then
