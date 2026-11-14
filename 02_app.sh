@@ -226,12 +226,24 @@ if [[ "$CODIGO" != "200" ]]; then
 fi
 info "garupa-api ativa e respondendo 200 em $URL_LOCAL"
 
-if [[ "$MODO" == "repositorio" && -n "$APP_CSV_RISCO" ]]; then
-  # Caminho absoluto (ex.: /opt/garupa/dados/risco_celula.csv) ou relativo ao repositório da API.
-  CSV="$APP_CSV_RISCO"
-  [[ "$CSV" == /* ]] || CSV="$DIR_SRC/$CSV"
-  info "Carregando a tabela de risco: $CSV"
-  roda_comando_app "$LINK_APP" carregar-risco "$CSV"
+if [[ "$MODO" == "repositorio" && -n "${APP_CSV_RISCO:-}" ]]; then
+  # Caminho absoluto ou relativo a este repositório (ex.: dados/risco_celula.csv).
+  ORIGEM_CSV="$APP_CSV_RISCO"
+  [[ "$ORIGEM_CSV" == /* ]] || ORIGEM_CSV="$RAIZ_REPO/$ORIGEM_CSV"
+  if [[ -f "$ORIGEM_CSV" ]]; then
+    # Cópia numa pasta que o usuário garupa consegue ler (a pasta pessoal de quem roda o script, não).
+    CSV="/opt/garupa/dados/risco_celula.csv"
+    install -d -m 0750 -o root -g garupa /opt/garupa/dados
+    [[ "$ORIGEM_CSV" -ef "$CSV" ]] || install -m 0640 -o root -g garupa "$ORIGEM_CSV" "$CSV"
+    chown root:garupa "$CSV"
+    chmod 0640 "$CSV"
+    info "Carregando a tabela de risco: $ORIGEM_CSV ($(( $(wc -l < "$CSV") - 1 )) linhas)"
+    roda_comando_app "$LINK_APP" carregar-risco "$CSV"
+    auditoria CARGA_RISCO "linhas=$(( $(wc -l < "$CSV") - 1 )) sha256=$(sha256sum "$CSV" | cut -c1-16)"
+  else
+    # A API funciona sem o CSV (as consultas de risco voltam vazias); não para o provisionamento.
+    aviso "CSV de risco não encontrado em $ORIGEM_CSV; carga pulada. Veja a seção 5 do guia."
+  fi
 fi
 
 etapa "7/8 Nginx como proxy reverso + SELinux"

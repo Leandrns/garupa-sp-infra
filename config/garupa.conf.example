@@ -34,8 +34,9 @@ APP_CHAVE_CONEXAO="ConnectionStrings__GarupaDb"
 # Criptografia__Chave protege a ficha médica: perder ou trocar torna os dados ilegíveis.
 APP_SEGREDOS_GERADOS="Criptografia__Chave"
 # CSV de risco carregado após o deploy com "carregar-risco <arquivo>".
-# Caminho absoluto ou relativo ao repositório da API. Vazio = não carrega.
-APP_CSV_RISCO=""
+# Caminho absoluto ou relativo a este repositório. Vazio = não carrega.
+# Se o arquivo não existir, a carga é pulada com um aviso.
+APP_CSV_RISCO="dados/risco_celula.csv"
 
 # Tem de bater com o <TargetFramework> da API (net10.0 -> "10.0").
 DOTNET_VERSAO="10.0"
